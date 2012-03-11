@@ -34,13 +34,13 @@ if(ref($reconnect) ne 'HASH')
 	$reconnect->{random} = 30;
 	$reconnect->{counter} = 0;
 	
-	# Wait 1 minute after starting kore before trying to relog.
+	# Wait 30 seconds after starting kore before trying to relog.
 	
 	my $time = time();	
-	$reconnect->{time} = $time + 60;
+	$reconnect->{time} = $time + 30;
 }
 
-Plugins::register("Reconnect", "Version 0.1 r3", \&unload);
+Plugins::register("Reconnect", "Version 0.1 r4", \&unload);
 my $hooks = Plugins::addHooks(['mainLoop_post', \&loop],
 								['packet/received_character_ID_and_Map', \&connected],
 								['disconnected', \&disconnected]);
