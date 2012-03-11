@@ -29,7 +29,9 @@ if(ref($reconnect) ne 'HASH')
 							 900, 	# 15 minutes
 							 1800,	# 30 minutes
 							 3600];	# 1 hour
-							 
+
+
+	$reconnect->{random} = 30;
 	$reconnect->{counter} = 0;
 	
 	# Wait 1 minute after starting kore before trying to relog.
@@ -38,7 +40,7 @@ if(ref($reconnect) ne 'HASH')
 	$reconnect->{time} = $time + 60;
 }
 
-Plugins::register("Reconnect", "Version 0.1 r1", \&unload);
+Plugins::register("Reconnect", "Version 0.1 r2", \&unload);
 my $hooks = Plugins::addHooks(['mainLoop_post', \&loop],
 								['packet/received_character_ID_and_Map', \&connected],
 								['disconnected', \&disconnected]);
@@ -50,26 +52,22 @@ sub unload
 }
 
 sub loop
-{
-	# We have to wait a few seconds before sending the relog command,
-	# otherwise kore will relog based on the value in timeouts.txt
-	
+{	
 	my $time = time();	
 	
 	if(Network::DirectConnection::getState() == Network::NOT_CONNECTED and $config{XKore} == 0 and $reconnect->{time} < $time)
-	{
-		print("$reconnect->{time}\n");
-		print("$time\n");
+	{		
+		my $relogTime = @{$reconnect->{timeout}}[$reconnect->{counter}];
 
-		$reconnect->{time} = $time + @{$reconnect->{timeout}}[$reconnect->{counter}];
-		Commands::run("relog @{$reconnect->{timeout}}[$reconnect->{counter}]");
-		
-		print("$reconnect->{time}\n");
-		print("$time\n");
-		
+		if($reconnect->{random}) {
+			$relogTime += int(rand($reconnect->{random}));
+		}
+
+		$reconnect->{time} = $time + $relogTime;	
+		Commands::run("relog $relogTime");
+				
 		my $sizeOf = @{$reconnect->{timeout}};	
-		if($reconnect->{counter} < $sizeOf - 1)
-		{
+		if($reconnect->{counter} < $sizeOf - 1) {
 			$reconnect->{counter}++;
 		}
 	}
@@ -77,14 +75,16 @@ sub loop
 
 sub connected
 {
-	$reconnect->{status} = 'connected';
 	$reconnect->{counter} = 0;
 }
 
 sub disconnected
 {
 	my $time = time();
-	$reconnect->{status} = 'disconnected';
+
+	# We have to wait a few seconds before sending the relog command,
+	# otherwise kore will relog based on the value in timeouts.txt
+
 	$reconnect->{time} = $time + 3;
 }
 
