@@ -40,7 +40,7 @@ if(ref($reconnect) ne 'HASH')
 	$reconnect->{time} = $time + 60;
 }
 
-Plugins::register("Reconnect", "Version 0.1 r2", \&unload);
+Plugins::register("Reconnect", "Version 0.1 r3", \&unload);
 my $hooks = Plugins::addHooks(['mainLoop_post', \&loop],
 								['packet/received_character_ID_and_Map', \&connected],
 								['disconnected', \&disconnected]);
@@ -63,7 +63,8 @@ sub loop
 			$relogTime += int(rand($reconnect->{random}));
 		}
 
-		$reconnect->{time} = $time + $relogTime;	
+		# 10 seconds should be enough to initiate the connection with the server?
+		$reconnect->{time} = $time + $relogTime + 10;
 		Commands::run("relog $relogTime");
 				
 		my $sizeOf = @{$reconnect->{timeout}};	
