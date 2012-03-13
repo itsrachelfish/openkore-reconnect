@@ -32,18 +32,12 @@ if(ref($reconnect) ne 'HASH')
 
 
 	$reconnect->{random} = 30;
-	$reconnect->{counter} = 0;
-	
-	# Wait 30 seconds after starting kore before trying to relog.
-	
-	my $time = time();	
-	$reconnect->{time} = $time + 30;
+	$reconnect->{counter} = 0;	
 }
 
-Plugins::register("Reconnect", "Version 0.1 r4", \&unload);
+Plugins::register("Reconnect", "Version 0.1 r5", \&unload);
 my $hooks = Plugins::addHooks(['mainLoop_post', \&loop],
-								['packet/received_character_ID_and_Map', \&connected],
-								['disconnected', \&disconnected]);
+								['packet/received_character_ID_and_Map', \&connected]);
 
 								
 sub unload
@@ -55,18 +49,20 @@ sub loop
 {	
 	my $time = time();	
 	
-	if(Network::DirectConnection::getState() == Network::NOT_CONNECTED and $config{XKore} == 0 and $reconnect->{time} < $time)
-	{		
-		my $relogTime = @{$reconnect->{timeout}}[$reconnect->{counter}];
+	if(Network::DirectConnection::getState() == Network::NOT_CONNECTED and $reconnect->{time} < $time)
+	{
+		print("NOT CONNECTED?!?!?!\n");
+		my $reconnectTime = @{$reconnect->{timeout}}[$reconnect->{counter}];
 
 		if($reconnect->{random}) {
-			$relogTime += int(rand($reconnect->{random}));
+			$reconnectTime += int(rand($reconnect->{random}));
 		}
 
-		# 10 seconds should be enough to initiate the connection with the server?
-		$reconnect->{time} = $time + $relogTime + 10;
-		Commands::run("relog $relogTime");
-				
+		print("RECONNECT TIME SET TO $timeout{reconnect}->{timeout} !!!!!!!!!!!!!!!!!!!!!!\n");
+		$reconnect->{time} = $time + $timeout{reconnect}->{timeout};
+		$timeout{reconnect} = {'timeout' => $reconnectTime};
+		print("SET TIMEOUT TO $reconnectTime !!!!!!!!!!!!!!!!!!!!!!!!!\n");
+		
 		my $sizeOf = @{$reconnect->{timeout}};	
 		if($reconnect->{counter} < $sizeOf - 1) {
 			$reconnect->{counter}++;
@@ -76,18 +72,18 @@ sub loop
 
 sub connected
 {
+	my $time = time();	
+	print("COUNTER RESET!!!!!!!!!!!!!!!!!!!!!!!!!!1\n");
 	$reconnect->{counter} = 0;
+	
+	my $reconnectTime = @{$reconnect->{timeout}}[$reconnect->{counter}];
+
+	if($reconnect->{random}) {
+		$reconnectTime += int(rand($reconnect->{random}));
+	}
+
+	$timeout{reconnect} = {'timeout' => $reconnectTime};
+	print("SET TIMEOUT TO $reconnectTime !!!!!!!!!!!!!!!!!!!!!!!!!\n");
 }
-
-sub disconnected
-{
-	my $time = time();
-
-	# We have to wait a few seconds before sending the relog command,
-	# otherwise kore will relog based on the value in timeouts.txt
-
-	$reconnect->{time} = $time + 3;
-}
-
 
 1;
