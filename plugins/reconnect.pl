@@ -23,11 +23,11 @@ our $reconnect ||= {
 								  1800,	# 30 minutes
 								  3600],# 1 hour
 					
-					'random'	=> 30,
+					'random'	=> 15,
 					'counter'	=> 0
 					};
 
-Plugins::register("Reconnect", "Version 0.1 r6", \&unload);
+Plugins::register("Reconnect", "Version 0.1 r7", \&unload);
 my $hooks = Plugins::addHooks(['mainLoop_post', \&loop],
 								['packet/received_character_ID_and_Map', \&connected]);
 
